@@ -59,13 +59,15 @@ class RecaptchaForm(BaseForm):
             else:
                 args = (args[0], data) + args[2:]
         super(RecaptchaForm, self).__init__(*args, **kwargs)
-        self._recaptcha_public_key = getattr(self, 'recaptcha_public_key', getattr(settings, 'RECAPTCHA_PUBLIC_KEY'))
-        self._recaptcha_private_key = getattr(self, 'recaptcha_private_key', getattr(settings, 'RECAPTCHA_PRIVATE_KEY'))
+        self._recaptcha_public_key = getattr(self, 'recaptcha_public_key', getattr(settings, 'RECAPTCHA_PUBLIC_KEY', None))
+        self._recaptcha_private_key = getattr(self, 'recaptcha_private_key', getattr(settings, 'RECAPTCHA_PRIVATE_KEY', None))
+        self._recaptcha_theme = getattr(self, 'recaptcha_theme', getattr(settings, 'RECAPTCHA_THEME', 'clean'))
         self.fields['recaptcha_response_field'].widget.public_key = self._recaptcha_public_key
+        self.fields['recaptcha_response_field'].widget.theme = self._recaptcha_theme
         # Move the ReCAPTCHA fields to the end of the form
         self.fields['recaptcha_challenge_field'] = self.fields.pop('recaptcha_challenge_field')
         self.fields['recaptcha_response_field'] = self.fields.pop('recaptcha_response_field')
-        
+    
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
             self._validate_captcha()
