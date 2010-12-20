@@ -8,14 +8,10 @@ from widgets import RecaptchaChallenge, RecaptchaResponse
 from django.utils.translation import ugettext as _
 
 
-
 class BaseForm(forms.Form):
-    
     def __init__(self, request, *args, **kwargs):
         self._request = request
         super(BaseForm, self).__init__(*args, **kwargs)
-        
-
 
 
 class AkismetForm(BaseForm):
@@ -46,10 +42,29 @@ class RecaptchaForm(BaseForm):
     recaptcha_always_validate = False
     
     def __init__(self, *args, **kwargs):
+        # Because the ReCAPTCHA library requires the fields to be named a
+        # certain way, using a form prefix will break the validation unless we
+        # modify the received POST and rename the keys accordingly
+        if ('data' in kwargs or len(args) > 1) and 'prefix' in kwargs:
+            data = kwargs.get('data', args[1]).__copy__()
+            data['%s-recaptcha_challenge_field' % kwargs['prefix']] = \
+                data.pop('recaptcha_challenge_field', [u''])[0]
+            data['%s-recaptcha_response_field' % kwargs['prefix']] = \
+                data.pop('recaptcha_response_field', [u''])[0]
+            data._mutable = False
+            # Since data could have been passed eith as an arg or kwarg, set
+            # the right one to the new data
+            if 'data' in kwargs:
+                kwargs['data'] = data
+            else:
+                args = (args[0], data) + args[2:]
         super(RecaptchaForm, self).__init__(*args, **kwargs)
         self._recaptcha_public_key = getattr(self, 'recaptcha_public_key', getattr(settings, 'RECAPTCHA_PUBLIC_KEY'))
         self._recaptcha_private_key = getattr(self, 'recaptcha_private_key', getattr(settings, 'RECAPTCHA_PRIVATE_KEY'))
         self.fields['recaptcha_response_field'].widget.public_key = self._recaptcha_public_key
+        # Move the ReCAPTCHA fields to the end of the form
+        self.fields['recaptcha_challenge_field'] = self.fields.pop('recaptcha_challenge_field')
+        self.fields['recaptcha_response_field'] = self.fields.pop('recaptcha_response_field')
         
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
