@@ -15,7 +15,7 @@ class BaseForm(forms.Form):
 
 
 class AkismetForm(BaseForm):
-    
+
     akismet_fields = {
             'comment_author': 'name',
             'comment_author_email': 'email',
@@ -23,7 +23,7 @@ class AkismetForm(BaseForm):
             'comment_content': 'comment',
             }
     akismet_api_key = None
-    
+
     def akismet_check(self):
         fields = {}
         for key, value in self.akismet_fields.items():
@@ -40,7 +40,8 @@ class RecaptchaForm(BaseForm):
                     'required': _('You did not enter any of the words.')
             })
     recaptcha_always_validate = False
-    
+    recaptcha_custom_translations = None
+
     def __init__(self, *args, **kwargs):
         # Because the ReCAPTCHA library requires the fields to be named a
         # certain way, using a form prefix will break the validation unless we
@@ -62,12 +63,16 @@ class RecaptchaForm(BaseForm):
         self._recaptcha_public_key = getattr(self, 'recaptcha_public_key', getattr(settings, 'RECAPTCHA_PUBLIC_KEY', None))
         self._recaptcha_private_key = getattr(self, 'recaptcha_private_key', getattr(settings, 'RECAPTCHA_PRIVATE_KEY', None))
         self._recaptcha_theme = getattr(self, 'recaptcha_theme', getattr(settings, 'RECAPTCHA_THEME', 'clean'))
+        self._recaptcha_custom_translations = getattr(self, 'recaptcha_custom_translations', getattr(settings, 'RECAPTCHA_CUSTOM_TRANSLATIONS', None))
+
         self.fields['recaptcha_response_field'].widget.public_key = self._recaptcha_public_key
         self.fields['recaptcha_response_field'].widget.theme = self._recaptcha_theme
+        self.fields['recaptcha_response_field'].widget.custom_translations = self._recaptcha_custom_translations
+
         # Move the ReCAPTCHA fields to the end of the form
         self.fields['recaptcha_challenge_field'] = self.fields.pop('recaptcha_challenge_field')
         self.fields['recaptcha_response_field'] = self.fields.pop('recaptcha_response_field')
-    
+
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
             self._validate_captcha()
@@ -77,7 +82,7 @@ class RecaptchaForm(BaseForm):
         if 'recaptcha_response_field' in self.cleaned_data:
             self._validate_captcha()
         return self.cleaned_data['recaptcha_challenge_field']
-    
+
     def _validate_captcha(self):
         if not self.recaptcha_always_validate:
             rcf = self.cleaned_data['recaptcha_challenge_field']
@@ -91,9 +96,9 @@ class RecaptchaForm(BaseForm):
                 if not check.is_valid:
                     raise forms.ValidationError(_('The words you entered did not match the image'))
 
+
 class HoneyPotForm(BaseForm):
     accept_terms = HoneypotField()
-    
 
 
 class SuperSpamKillerForm(RecaptchaForm, HoneyPotForm, AkismetForm):
