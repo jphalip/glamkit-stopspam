@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 
 from widgets import HoneypotWidget
 
@@ -12,7 +12,7 @@ class HoneypotField(forms.BooleanField):
               required = False,
               error_messages = { 'checked': _("Please don't check this box.") },
               *args, **kwargs)
-    
+
     def clean(self, value):
         val = super(HoneypotField, self).clean(value)
         if val:
