@@ -6,7 +6,6 @@ from stopspam import utils
 
 from fields import HoneypotField
 from widgets import RecaptchaChallenge, RecaptchaResponse
-from django.utils.translation import ugettext as _
 
 
 class BaseForm(forms.Form):
